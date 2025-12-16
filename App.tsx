@@ -253,11 +253,11 @@ export default function App() {
     <div className="min-h-screen flex flex-col font-sans text-slate-800">
       <Header />
 
-      <main className="flex-grow p-4 md:p-8 max-w-6xl mx-auto w-full space-y-8">
+      <main className="flex-grow p-3 md:p-8 max-w-6xl mx-auto w-full space-y-4 md:space-y-8">
         
         {/* Patient Control Panel */}
-        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 no-print">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 md:p-6 no-print">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6">
             
             {/* Input Column */}
             <div className="md:col-span-5 space-y-4">

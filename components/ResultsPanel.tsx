@@ -39,31 +39,31 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ result, loadingAI }) => {
     <div className="space-y-6 animate-fade-in">
       
       {/* Metric Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {/* BPM Card */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-          <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">Average BPM</span>
-          <span className="text-3xl font-bold text-slate-800 mt-1">{result.avgBpm}</span>
-          <div className="mt-2 w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+        <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+          <span className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide font-medium">Average BPM</span>
+          <span className="text-2xl md:text-3xl font-bold text-slate-800 mt-1">{result.avgBpm}</span>
+          <div className="mt-2 w-full bg-slate-100 rounded-full h-1 md:h-1.5 overflow-hidden">
              <div className="bg-slate-400 h-full" style={{ width: `${Math.min(result.confidenceScore, 100)}%` }}></div>
           </div>
           <span className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
-             Confidence: {result.confidenceScore}%
+             Conf: {result.confidenceScore}%
           </span>
         </div>
 
         {/* Rhythm Card */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
-          <span className="text-xs text-slate-500 uppercase tracking-wide font-medium">Rhythm Stability</span>
-          <span className={`text-lg font-bold mt-2 ${result.stability === RhythmStability.STABLE ? 'text-green-600' : 'text-yellow-600'}`}>
+        <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+          <span className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide font-medium">Rhythm Stability</span>
+          <span className={`text-base md:text-lg font-bold mt-2 ${result.stability === RhythmStability.STABLE ? 'text-green-600' : 'text-yellow-600'}`}>
             {result.stability}
           </span>
-          <span className="text-[10px] text-slate-400 mt-1">Variance: {result.maxBpm - result.minBpm} BPM</span>
+          <span className="text-[10px] text-slate-400 mt-1">Var: {result.maxBpm - result.minBpm}</span>
         </div>
 
         {/* Risk Card */}
-        <div className={`p-4 rounded-xl border shadow-sm flex flex-col items-center text-center ${getRiskColor(result.riskLevel)}`}>
-          <span className="text-xs uppercase tracking-wide font-medium opacity-80">Screening Risk</span>
+        <div className={`col-span-2 md:col-span-1 p-3 md:p-4 rounded-xl border shadow-sm flex flex-col items-center text-center ${getRiskColor(result.riskLevel)}`}>
+          <span className="text-[10px] md:text-xs uppercase tracking-wide font-medium opacity-80">Screening Risk</span>
           <div className="flex items-center gap-2 mt-2">
             {getRiskIcon(result.riskLevel)}
             <span className="text-lg font-bold">{result.riskLevel}</span>

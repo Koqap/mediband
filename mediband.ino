@@ -43,6 +43,7 @@ String lastCommandPayload = "";
 #define GRAPH_Y 44
 int ekgBuffer[SCREEN_WIDTH];
 int ekgIndex = 0;
+int lastBpm = 75;
 
 void setup() {
   Serial.begin(115200);
@@ -109,38 +110,77 @@ void playStartupAnimation() {
 
 void showIdleScreen() {
   display.clearDisplay();
+  
+  // Border
+  display.drawRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, SSD1306_WHITE);
+  
+  // Title
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
   int16_t x1, y1;
   uint16_t w, h;
   display.getTextBounds("MEDIBAND", 0, 0, &x1, &y1, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, (SCREEN_HEIGHT - h) / 2 - 10);
+  display.setCursor((SCREEN_WIDTH - w) / 2, 10);
   display.println("MEDIBAND");
   
+  // Status
   display.setTextSize(1);
-  const char* sub = "Press BOOT to Start";
+  const char* status = "SYSTEM READY";
+  display.getTextBounds(status, 0, 0, &x1, &y1, &w, &h);
+  display.setCursor((SCREEN_WIDTH - w) / 2, 35);
+  display.println(status);
+
+  // Instruction
+  const char* sub = "[PRESS BOOT]";
   display.getTextBounds(sub, 0, 0, &x1, &y1, &w, &h);
-  display.setCursor((SCREEN_WIDTH - w) / 2, SCREEN_HEIGHT - 15);
+  display.setCursor((SCREEN_WIDTH - w) / 2, 50);
   display.println(sub);
+  
   display.display();
 }
 
 void showResult(int bpm) {
   display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
   
-  display.setCursor(10, 10);
-  display.println("FINISHED");
-  
+  // Header Box
+  display.fillRect(0, 0, SCREEN_WIDTH, 16, SSD1306_WHITE);
+  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
   display.setTextSize(1);
-  display.setCursor(10, 35);
-  display.print("Avg BPM: ");
+  display.setCursor(40, 4);
+  display.println("COMPLETED");
+  
+  // BPM Result
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+  display.setCursor(10, 25);
+  display.print("AVG BPM:");
   display.setTextSize(2);
+  display.setCursor(70, 20);
   display.print(bpm);
+
+  // Risk Level (Inverted Box)
+  String risk = "NORMAL";
+  if (bpm < 60 || bpm > 100) risk = "WARNING";
+  if (bpm < 40 || bpm > 120) risk = "CRITICAL";
+  
+  int16_t x1, y1;
+  uint16_t w, h;
+  display.setTextSize(1);
+  display.getTextBounds(risk, 0, 0, &x1, &y1, &w, &h);
+  
+  // Draw Box for Risk
+  int boxX = (SCREEN_WIDTH - w) / 2 - 4;
+  int boxY = 45;
+  int boxW = w + 8;
+  int boxH = h + 6;
+  
+  display.fillRect(boxX, boxY, boxW, boxH, SSD1306_WHITE);
+  display.setTextColor(SSD1306_BLACK, SSD1306_WHITE);
+  display.setCursor(boxX + 4, boxY + 3);
+  display.print(risk);
   
   display.display();
-  delay(3000); // Show result for 3 seconds
+  delay(10000); // Show result for 10 seconds
 }
 
 void startMeasurement(unsigned long startTime) {
@@ -172,9 +212,6 @@ void loop() {
     checkForCommand(currentMillis);
   }
 
-  // Variable to store last BPM for result
-  static int lastBpm = 75;
-
   if (currentState == MEASURING) {
     // Safety check to prevent underflow if time wrapped or logic is off
     if (currentMillis < measurementStartTime) measurementStartTime = currentMillis;
@@ -184,7 +221,7 @@ void loop() {
     
     if (elapsed >= MEASUREMENT_DURATION) {
       currentState = COMPLETED;
-      sendData(0, 0, "COMPLETED"); // Notify server that we are done
+      sendData(lastBpm, 0, "COMPLETED"); // Notify server that we are done
       showResult(lastBpm); 
       showIdleScreen();
       currentState = IDLE;
@@ -198,7 +235,7 @@ void loop() {
     // Pulse Animation Logic (Synced to BPM)
     long beatInterval = 60000 / bpm;
     bool beat = (currentMillis % beatInterval) < 100; 
-    int radius = beat ? 8 : 6;
+    int radius = beat ? 6 : 4;
 
     // Update EKG Buffer
     // Generate a waveform value
@@ -223,30 +260,31 @@ void loop() {
       
       display.clearDisplay();
       
-      // Timer Bar
-      int barWidth = map(elapsed, 0, MEASUREMENT_DURATION, 0, SCREEN_WIDTH);
-      display.fillRect(0, 0, barWidth, 4, SSD1306_WHITE);
-      
-      // BPM Display
-      display.setTextSize(3);
-      display.setCursor(10, 15);
-      display.print(bpm);
+      // Top Bar: Timer
+      display.drawLine(0, 10, SCREEN_WIDTH, 10, SSD1306_WHITE);
       display.setTextSize(1);
-      display.print(" BPM");
-
-      // Timer Text
-      display.setCursor(10, 40); // Moved up slightly
-      display.print("Time: ");
+      display.setTextColor(SSD1306_WHITE);
+      display.setCursor(0, 0);
+      display.print("SCANNING...");
+      display.setCursor(90, 0);
       display.print(remaining / 1000);
       display.print("s");
+      
+      // Middle: Large BPM
+      display.setTextSize(3);
+      display.setCursor(35, 18);
+      display.print(bpm);
+      display.setTextSize(1);
+      display.setCursor(95, 32);
+      display.print("BPM");
 
-      // Heart Icon
-      display.fillCircle(100, 25, radius, SSD1306_WHITE);
+      // Heart Icon (Left side)
+      display.fillCircle(15, 28, radius, SSD1306_WHITE);
       if (beat) {
-         display.drawCircle(100, 25, radius + 3, SSD1306_WHITE);
+         display.drawCircle(15, 28, radius + 3, SSD1306_WHITE);
       }
       
-      // Draw EKG Graph
+      // Draw EKG Graph (Bottom)
       for (int i = 0; i < SCREEN_WIDTH; i++) {
         int index = (ekgIndex + i) % SCREEN_WIDTH;
         int y = ekgBuffer[index];

@@ -45,13 +45,13 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
   };
 
   return (
-    <div className={`rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 ${bgColorClass} border-2 border-slate-100 h-80`}>
+    <div className={`rounded-2xl p-6 flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 ${bgColorClass} border-2 border-slate-100 h-64 md:h-80`}>
       
       {/* Signal Quality Indicator */}
       {status === 'MEASURING' && (
-        <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/80 px-3 py-1.5 rounded-full shadow-sm backdrop-blur-sm">
-          <Signal size={14} className={getSignalColor()} />
-          <span className="text-xs font-semibold text-slate-600">Signal: {signalQuality}</span>
+        <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-white/80 px-2 py-1 md:px-3 md:py-1.5 rounded-full shadow-sm backdrop-blur-sm">
+          <Signal size={12} className={`md:w-3.5 md:h-3.5 ${getSignalColor()}`} />
+          <span className="text-[10px] md:text-xs font-semibold text-slate-600">Signal: {signalQuality}</span>
         </div>
       )}
 
@@ -59,8 +59,8 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
       {status === 'MEASURING' && (
         <div className="absolute inset-0 flex items-center justify-center opacity-10 pointer-events-none">
            <Heart 
-            size={300} 
-            className={`${heartColor}`} 
+            size={200} 
+            className={`md:w-[300px] md:h-[300px] ${heartColor}`} 
             style={{ animation: `pulse ${animationDuration} infinite` }}
            />
         </div>
@@ -68,11 +68,11 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
 
       {/* Main Display */}
       <div className="z-10 flex flex-col items-center">
-        <div className="relative mb-4">
+        <div className="relative mb-2 md:mb-4">
            <Heart 
-            size={80} 
+            size={60} 
             fill={status === 'MEASURING' ? "currentColor" : "none"}
-            className={`${heartColor} transition-all duration-300`} 
+            className={`md:w-20 md:h-20 ${heartColor} transition-all duration-300`} 
             style={{ 
               animation: status === 'MEASURING' ? `beat ${animationDuration} infinite` : 'none',
               transformOrigin: 'center'
@@ -80,33 +80,33 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
            />
         </div>
 
-        <div className={`text-7xl font-bold tabular-nums tracking-tighter ${colorClass}`}>
+        <div className={`text-5xl md:text-7xl font-bold tabular-nums tracking-tighter ${colorClass}`}>
           {bpm > 0 ? bpm : '--'}
         </div>
         
-        <div className="text-sm font-semibold text-slate-500 uppercase tracking-widest mt-2">
+        <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-widest mt-1 md:mt-2">
           Beats Per Minute
         </div>
 
         {/* Timer / Progress */}
         {status === 'MEASURING' && (
-          <div className="mt-6 w-64">
-            <div className="flex justify-between text-xs text-slate-500 mb-1 font-medium">
+          <div className="mt-4 md:mt-6 w-48 md:w-64">
+            <div className="flex justify-between text-[10px] md:text-xs text-slate-500 mb-1 font-medium">
               <span>Measuring...</span>
               <span>{progress}s / {duration}s</span>
             </div>
-            <div className="h-2 bg-slate-200 rounded-full overflow-hidden">
+            <div className="h-1.5 md:h-2 bg-slate-200 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-blue-500 transition-all duration-1000 ease-linear"
                 style={{ width: `${(progress / duration) * 100}%` }}
               />
             </div>
             {signalQuality !== 'Good' ? (
-               <p className="text-center text-xs text-yellow-600 mt-2 font-medium animate-pulse">
+               <p className="text-center text-[10px] md:text-xs text-yellow-600 mt-2 font-medium animate-pulse">
                  Adjust finger position
                </p>
             ) : (
-              <p className="text-center text-xs text-slate-400 mt-2">
+              <p className="text-center text-[10px] md:text-xs text-slate-400 mt-2">
                 Keep patient still
               </p>
             )}
@@ -114,7 +114,7 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
         )}
 
         {status === 'IDLE' && (
-            <p className="mt-8 text-slate-400 font-medium">Ready to start</p>
+            <p className="mt-6 md:mt-8 text-slate-400 font-medium text-sm">Ready to start</p>
         )}
       </div>
 
