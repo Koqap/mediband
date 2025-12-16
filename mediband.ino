@@ -19,8 +19,8 @@
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // WIFI CONFIGURATION
-const char* ssid = "User";
-const char* password = "12345678";
+const char* ssid = "nyeahhh";
+const char* password = "shantel123";
 
 // API CONFIGURATION
 const char* serverUrl = "https://mediband-eight.vercel.app/api/receive";

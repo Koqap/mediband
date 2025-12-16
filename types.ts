@@ -21,6 +21,7 @@ export interface CheckUpResult {
   riskLevel: RiskLevel;
   symptoms: string[];
   confidenceScore: number;
+  spo2?: number;
   aiInsights?: AIInsightData;
 }
 

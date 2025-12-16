@@ -39,7 +39,7 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ result, loadingAI }) => {
     <div className="space-y-6 animate-fade-in">
       
       {/* Metric Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
         {/* BPM Card */}
         <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
           <span className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide font-medium">Average BPM</span>
@@ -52,8 +52,15 @@ const ResultsPanel: React.FC<ResultsPanelProps> = ({ result, loadingAI }) => {
           </span>
         </div>
 
-        {/* Rhythm Card */}
+        {/* SpO2 Card */}
         <div className="bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
+          <span className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide font-medium">SpO2 Level</span>
+          <span className="text-2xl md:text-3xl font-bold text-slate-800 mt-1">{result.spo2 || '--'}%</span>
+          <span className="text-[10px] text-slate-400 mt-1">Normal: 95-100%</span>
+        </div>
+
+        {/* Rhythm Card */}
+        <div className="col-span-2 md:col-span-1 bg-white p-3 md:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center text-center">
           <span className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide font-medium">Rhythm Stability</span>
           <span className={`text-base md:text-lg font-bold mt-2 ${result.stability === RhythmStability.STABLE ? 'text-green-600' : 'text-yellow-600'}`}>
             {result.stability}
