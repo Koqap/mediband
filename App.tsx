@@ -167,18 +167,23 @@ export default function App() {
     
     if (timerRef.current) clearInterval(timerRef.current);
     
+    // Decide a base BPM for this session (e.g., 70-85 for Normal)
+    const baseBpm = Math.floor(Math.random() * (85 - 70 + 1)) + 70;
+    
     let elapsed = 0;
     timerRef.current = window.setInterval(() => {
       elapsed += 1;
       setProgress(elapsed);
       
-      // Generate random BPM 60-100
-      const randomBpm = Math.floor(Math.random() * (100 - 60 + 1)) + 60;
+      // Generate realistic fluctuation (+/- 3 BPM)
+      const noise = Math.floor(Math.random() * 7) - 3; 
+      const randomBpm = baseBpm + noise;
+      
       setCurrentBpm(randomBpm);
       dataPointsRef.current.push(randomBpm);
       
-      // Generate random SpO2 95-100
-      const newSpo2 = Math.floor(Math.random() * (100 - 95 + 1)) + 95;
+      // Generate random SpO2 96-99 for healthy
+      const newSpo2 = Math.floor(Math.random() * (99 - 96 + 1)) + 96;
       setCurrentSpo2(newSpo2);
       spo2Ref.current = newSpo2;
       
