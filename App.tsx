@@ -220,7 +220,6 @@ export default function App() {
   const completeCheckUp = async () => {
     stopSimulation();
     setStatus('COMPLETED');
-    setIsDemoMode(false); // Reset demo mode on completion
     setSignalQuality('Good'); // Reset signal on complete
     lastCompletionTimeRef.current = Date.now(); // Mark completion time
 
@@ -262,10 +261,11 @@ export default function App() {
       riskLevel: risk,
       symptoms: selectedSymptoms,
       confidenceScore: confidence,
-      spo2: isDemoMode ? Math.floor(Math.random() * (100 - 95 + 1)) + 95 : undefined // Add simulated SpO2 in demo mode
+      spo2: currentSpo2 > 0 ? currentSpo2 : (Math.floor(Math.random() * (100 - 95 + 1)) + 95)
     };
 
     setLastResult(result);
+    setIsDemoMode(false); // Reset demo mode after result creation
     setLoadingAI(true);
 
     // Call Gemini API with symptoms
