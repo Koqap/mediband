@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, Wifi } from 'lucide-react';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onTriggerDemo?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onTriggerDemo }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -10,13 +14,17 @@ const Header: React.FC = () => {
   }, []);
 
   const triggerMockData = async () => {
+    if (onTriggerDemo) {
+      onTriggerDemo();
+      console.log('Client-side demo triggered');
+      return;
+    }
+    
+    // Fallback to API trigger if no handler provided (legacy/backup)
     try {
       const mockData = {
         bpm: Math.floor(Math.random() * (100 - 60 + 1)) + 60,
         status: 'COMPLETED',
-        // SpO2 is handled by the API now, but we can send it or let API add it.
-        // The API adds it if missing or overwrites? Let's check api/receive.ts.
-        // api/receive.ts overwrites/adds it.
       };
       
       await fetch('/api/receive', {
@@ -24,7 +32,7 @@ const Header: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(mockData),
       });
-      console.log('Mock data triggered');
+      console.log('Mock data triggered via API');
     } catch (error) {
       console.error('Failed to trigger mock data', error);
     }

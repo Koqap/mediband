@@ -22,6 +22,7 @@ export default function App() {
   const [loadingAI, setLoadingAI] = useState(false);
   const [history, setHistory] = useState<CheckUpResult[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   
   // New State Features
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -51,7 +52,7 @@ export default function App() {
     let pollInterval: number;
 
     // Poll when IDLE, COMPLETED, or CONNECTING (waiting for device)
-    if (status === 'IDLE' || status === 'COMPLETED' || status === 'CONNECTING') {
+    if ((status === 'IDLE' || status === 'COMPLETED' || status === 'CONNECTING') && !isDemoMode) {
       pollInterval = window.setInterval(async () => {
         try {
           const res = await fetch('/api/latest');
@@ -139,6 +140,36 @@ export default function App() {
       }, 1000);
   };
 
+  const startDemoMode = () => {
+    if (status === 'MEASURING') return;
+    
+    setIsDemoMode(true);
+    setStatus('MEASURING');
+    setPatientId("Demo Patient");
+    setProgress(0);
+    setLastResult(null);
+    setShowHistory(false);
+    dataPointsRef.current = [];
+    setSignalQuality('Good');
+    
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    let elapsed = 0;
+    timerRef.current = window.setInterval(() => {
+      elapsed += 1;
+      setProgress(elapsed);
+      
+      // Generate random BPM 60-100
+      const randomBpm = Math.floor(Math.random() * (100 - 60 + 1)) + 60;
+      setCurrentBpm(randomBpm);
+      dataPointsRef.current.push(randomBpm);
+      
+      if (elapsed >= CHECKUP_DURATION_SEC) {
+        completeCheckUp();
+      }
+    }, 1000);
+  };
+
   const startCheckUp = async (autoStart = false) => {
     if (!autoStart && !patientId.trim()) {
       alert("Please enter a Patient ID first.");
@@ -177,6 +208,7 @@ export default function App() {
   const completeCheckUp = async () => {
     stopSimulation();
     setStatus('COMPLETED');
+    setIsDemoMode(false); // Reset demo mode on completion
     setSignalQuality('Good'); // Reset signal on complete
     lastCompletionTimeRef.current = Date.now(); // Mark completion time
 
@@ -217,7 +249,8 @@ export default function App() {
       stability,
       riskLevel: risk,
       symptoms: selectedSymptoms,
-      confidenceScore: confidence
+      confidenceScore: confidence,
+      spo2: isDemoMode ? Math.floor(Math.random() * (100 - 95 + 1)) + 95 : undefined // Add simulated SpO2 in demo mode
     };
 
     setLastResult(result);
@@ -251,7 +284,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans text-slate-800">
-      <Header />
+      <Header onTriggerDemo={startDemoMode} />
 
       <main className="flex-grow p-3 md:p-8 max-w-6xl mx-auto w-full space-y-4 md:space-y-8">
         
