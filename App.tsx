@@ -57,6 +57,13 @@ export default function App() {
           
           // If device is measuring, auto-start
           if (data && data.status === 'MEASURING') {
+             // Check for stale data (older than 10 seconds)
+             const now = Date.now();
+             if (data.timestamp && (now - data.timestamp > 10000)) {
+               console.log("Ignoring stale auto-start signal", now - data.timestamp);
+               return;
+             }
+
              // Only start if we aren't already (double check handled by status check above)
              // Use a default ID if none entered to ensure smooth demo
              if (!patientId) setPatientId("Guest Patient");

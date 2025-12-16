@@ -7,8 +7,9 @@ export const config = {
 export default async function handler(request: Request) {
   try {
     const body = await request.json();
-    // Validate basic structure if needed, but for now just save it
-    await kv.set('mediband_latest', body);
+    // Add server-side timestamp to prevent stale data issues
+    const dataWithTimestamp = { ...body, timestamp: Date.now() };
+    await kv.set('mediband_latest', dataWithTimestamp);
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
