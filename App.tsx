@@ -27,6 +27,25 @@ export default function App() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [signalQuality, setSignalQuality] = useState<'Good' | 'Fair' | 'Poor'>('Good');
 
+  // Refs for simulation and state tracking
+  const timerRef = useRef<number | null>(null);
+  const dataPointsRef = useRef<number[]>([]);
+  const lastCompletionTimeRef = useRef<number>(0);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => stopSimulation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const toggleSymptom = (symptom: string) => {
+    if (selectedSymptoms.includes(symptom)) {
+      setSelectedSymptoms(prev => prev.filter(s => s !== symptom));
+    } else {
+      setSelectedSymptoms(prev => [...prev, symptom]);
+    }
+  };
+
   // Auto-start Polling
   useEffect(() => {
     let pollInterval: number;
