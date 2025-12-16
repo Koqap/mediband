@@ -45,8 +45,34 @@ export default function App() {
     }
   };
 
-  const startCheckUp = () => {
-    if (!patientId.trim()) {
+  // Auto-start Polling
+  useEffect(() => {
+    let pollInterval: number;
+
+    if (status === 'IDLE' || status === 'COMPLETED') {
+      pollInterval = window.setInterval(async () => {
+        try {
+          const res = await fetch('/api/latest');
+          const data = await res.json();
+          
+          // If device is measuring, auto-start
+          if (data && data.status === 'MEASURING') {
+             // Only start if we aren't already (double check handled by status check above)
+             // Use a default ID if none entered to ensure smooth demo
+             if (!patientId) setPatientId("Guest Patient");
+             startCheckUp(true);
+          }
+        } catch (e) {
+          console.error("Error polling for auto-start", e);
+        }
+      }, 1000);
+    }
+
+    return () => clearInterval(pollInterval);
+  }, [status, patientId]);
+
+  const startCheckUp = (autoStart = false) => {
+    if (!autoStart && !patientId.trim()) {
       alert("Please enter a Patient ID first.");
       return;
     }
