@@ -32,6 +32,7 @@ export default function App() {
   // Refs for simulation and state tracking
   const timerRef = useRef<number | null>(null);
   const dataPointsRef = useRef<number[]>([]);
+  const spo2Ref = useRef<number>(0);
   const lastCompletionTimeRef = useRef<number>(0);
 
   // Cleanup on unmount
@@ -112,15 +113,18 @@ export default function App() {
              setCurrentBpm(data.bpm);
              dataPointsRef.current.push(data.bpm);
              
-             // Handle SpO2 (from API or simulated)
-             if (typeof data.spo2 === 'number') {
-               setCurrentSpo2(data.spo2);
-             } else {
-               // Fallback simulation if API doesn't provide it yet
-               setCurrentSpo2(Math.floor(Math.random() * (100 - 95 + 1)) + 95);
-             }
-             
-             // Sync Progress using timeLeft if available
+              // Handle SpO2 (from API or simulated)
+              let newSpo2 = 0;
+              if (typeof data.spo2 === 'number') {
+                newSpo2 = data.spo2;
+              } else {
+                // Fallback simulation if API doesn't provide it yet
+                newSpo2 = Math.floor(Math.random() * (100 - 95 + 1)) + 95;
+              }
+              setCurrentSpo2(newSpo2);
+              spo2Ref.current = newSpo2;
+              
+              // Sync Progress using timeLeft if available
              if (typeof data.timeLeft === 'number') {
                  // timeLeft is seconds remaining. 
                  // progress is seconds elapsed.
@@ -174,7 +178,9 @@ export default function App() {
       dataPointsRef.current.push(randomBpm);
       
       // Generate random SpO2 95-100
-      setCurrentSpo2(Math.floor(Math.random() * (100 - 95 + 1)) + 95);
+      const newSpo2 = Math.floor(Math.random() * (100 - 95 + 1)) + 95;
+      setCurrentSpo2(newSpo2);
+      spo2Ref.current = newSpo2;
       
       if (elapsed >= CHECKUP_DURATION_SEC) {
         completeCheckUp();
@@ -261,7 +267,7 @@ export default function App() {
       riskLevel: risk,
       symptoms: selectedSymptoms,
       confidenceScore: confidence,
-      spo2: currentSpo2 > 0 ? currentSpo2 : (Math.floor(Math.random() * (100 - 95 + 1)) + 95)
+      spo2: spo2Ref.current > 0 ? spo2Ref.current : (Math.floor(Math.random() * (100 - 95 + 1)) + 95)
     };
 
     setLastResult(result);
@@ -354,7 +360,7 @@ export default function App() {
                 </button>
               )}
               
-              {status === 'IDLE' ? (
+              {status === 'IDLE' || status === 'COMPLETED' ? (
                 <button 
                   onClick={() => startCheckUp(false)}
                   className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
