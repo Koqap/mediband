@@ -9,10 +9,35 @@ const Header: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
+  const triggerMockData = async () => {
+    try {
+      const mockData = {
+        bpm: Math.floor(Math.random() * (100 - 60 + 1)) + 60,
+        status: 'COMPLETED',
+        // SpO2 is handled by the API now, but we can send it or let API add it.
+        // The API adds it if missing or overwrites? Let's check api/receive.ts.
+        // api/receive.ts overwrites/adds it.
+      };
+      
+      await fetch('/api/receive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(mockData),
+      });
+      console.log('Mock data triggered');
+    } catch (error) {
+      console.error('Failed to trigger mock data', error);
+    }
+  };
+
   return (
     <header className="bg-white border-b border-slate-200 shadow-sm py-3 px-4 md:py-4 md:px-6 flex justify-between items-center sticky top-0 z-10">
       <div className="flex items-center gap-3">
-        <div className="bg-blue-600 p-1.5 md:p-2 rounded-lg text-white">
+        <div 
+          className="bg-blue-600 p-1.5 md:p-2 rounded-lg text-white cursor-pointer hover:bg-blue-700 transition-colors"
+          onClick={triggerMockData}
+          title="Click to simulate data"
+        >
           <Activity size={20} className="md:w-6 md:h-6" />
         </div>
         <div>
