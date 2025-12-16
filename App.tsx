@@ -17,6 +17,7 @@ export default function App() {
   const [patientId, setPatientId] = useState('');
   const [status, setStatus] = useState<AppStatus>('IDLE');
   const [currentBpm, setCurrentBpm] = useState(0);
+  const [currentSpo2, setCurrentSpo2] = useState(0);
   const [progress, setProgress] = useState(0);
   const [lastResult, setLastResult] = useState<CheckUpResult | null>(null);
   const [loadingAI, setLoadingAI] = useState(false);
@@ -111,6 +112,14 @@ export default function App() {
              setCurrentBpm(data.bpm);
              dataPointsRef.current.push(data.bpm);
              
+             // Handle SpO2 (from API or simulated)
+             if (typeof data.spo2 === 'number') {
+               setCurrentSpo2(data.spo2);
+             } else {
+               // Fallback simulation if API doesn't provide it yet
+               setCurrentSpo2(Math.floor(Math.random() * (100 - 95 + 1)) + 95);
+             }
+             
              // Sync Progress using timeLeft if available
              if (typeof data.timeLeft === 'number') {
                  // timeLeft is seconds remaining. 
@@ -163,6 +172,9 @@ export default function App() {
       const randomBpm = Math.floor(Math.random() * (100 - 60 + 1)) + 60;
       setCurrentBpm(randomBpm);
       dataPointsRef.current.push(randomBpm);
+      
+      // Generate random SpO2 95-100
+      setCurrentSpo2(Math.floor(Math.random() * (100 - 95 + 1)) + 95);
       
       if (elapsed >= CHECKUP_DURATION_SEC) {
         completeCheckUp();
@@ -423,6 +435,7 @@ export default function App() {
               </h2>
               <LiveMonitor 
                 bpm={currentBpm} 
+                spo2={currentSpo2}
                 status={status} 
                 progress={progress} 
                 duration={CHECKUP_DURATION_SEC}

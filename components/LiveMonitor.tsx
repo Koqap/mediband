@@ -4,13 +4,14 @@ import { AppStatus } from '../types';
 
 interface LiveMonitorProps {
   bpm: number;
+  spo2?: number;
   status: AppStatus;
   progress: number;
   duration: number;
   signalQuality: 'Good' | 'Fair' | 'Poor';
 }
 
-const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, duration, signalQuality }) => {
+const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, spo2, status, progress, duration, signalQuality }) => {
   
   // Determine color based on BPM
   let colorClass = 'text-slate-400'; // Idle
@@ -87,6 +88,14 @@ const LiveMonitor: React.FC<LiveMonitorProps> = ({ bpm, status, progress, durati
         <div className="text-xs md:text-sm font-semibold text-slate-500 uppercase tracking-widest mt-1 md:mt-2">
           Beats Per Minute
         </div>
+
+        {/* SpO2 Display */}
+        {status === 'MEASURING' && spo2 && (
+          <div className="mt-2 flex items-center gap-1.5 bg-blue-50 px-3 py-1 rounded-full">
+            <span className="text-xs font-bold text-blue-700">SpO2:</span>
+            <span className="text-sm font-bold text-blue-800">{spo2}%</span>
+          </div>
+        )}
 
         {/* Timer / Progress */}
         {status === 'MEASURING' && (
