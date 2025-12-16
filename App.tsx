@@ -27,54 +27,42 @@ export default function App() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [signalQuality, setSignalQuality] = useState<'Good' | 'Fair' | 'Poor'>('Good');
 
-  // Refs for simulation and state tracking
-  const timerRef = useRef<number | null>(null);
-  const dataPointsRef = useRef<number[]>([]);
-  const lastCompletionTimeRef = useRef<number>(0);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => stopSimulation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const toggleSymptom = (symptom: string) => {
-    if (selectedSymptoms.includes(symptom)) {
-      setSelectedSymptoms(prev => prev.filter(s => s !== symptom));
-    } else {
-      setSelectedSymptoms(prev => [...prev, symptom]);
-    }
-  };
-
   // Auto-start Polling
   useEffect(() => {
     let pollInterval: number;
 
-    if (status === 'IDLE' || status === 'COMPLETED') {
+    // Poll when IDLE, COMPLETED, or CONNECTING (waiting for device)
+    if (status === 'IDLE' || status === 'COMPLETED' || status === 'CONNECTING') {
       pollInterval = window.setInterval(async () => {
         try {
           const res = await fetch('/api/latest');
           const data = await res.json();
           
-          // If device is measuring, auto-start
+          // If device is measuring, auto-start or sync
           if (data && data.status === 'MEASURING') {
              // Check for stale data (older than 10 seconds)
              const now = Date.now();
              if (data.timestamp && (now - data.timestamp > 10000)) {
-               // console.log("Ignoring stale auto-start signal", now - data.timestamp);
                return;
              }
              
              // Check if this is a re-trigger of the same session we just finished
              if (data.timestamp && data.timestamp < lastCompletionTimeRef.current) {
-                // console.log("Ignoring signal from completed session");
                 return;
              }
 
-             // Only start if we aren't already (double check handled by status check above)
-             // Use a default ID if none entered to ensure smooth demo
-             if (!patientId) setPatientId("Guest Patient");
-             startCheckUp(true);
+             // If we were waiting (CONNECTING) or IDLE, start measuring
+             if (status !== 'MEASURING') {
+                 if (!patientId) setPatientId("Guest Patient");
+                 // Transition to MEASURING
+                 setStatus('MEASURING');
+                 setProgress(0);
+                 setLastResult(null);
+                 setShowHistory(false);
+                 dataPointsRef.current = [];
+                 setSignalQuality('Good');
+                 startRealtimePolling();
+             }
           }
         } catch (e) {
           console.error("Error polling for auto-start", e);
@@ -85,13 +73,55 @@ export default function App() {
     return () => clearInterval(pollInterval);
   }, [status, patientId]);
 
+  const startRealtimePolling = () => {
+      // Real Data Polling Loop
+      if (timerRef.current) clearInterval(timerRef.current);
+
+      timerRef.current = window.setInterval(async () => {
+        try {
+          const res = await fetch('/api/latest');
+          const data = await res.json();
+          
+          if (data && typeof data.bpm === 'number') {
+             setCurrentBpm(data.bpm);
+             dataPointsRef.current.push(data.bpm);
+             
+             // Sync Progress using timeLeft if available
+             if (typeof data.timeLeft === 'number') {
+                 // timeLeft is seconds remaining. 
+                 // progress is seconds elapsed.
+                 // CHECKUP_DURATION_SEC = 15
+                 const calculatedElapsed = CHECKUP_DURATION_SEC - data.timeLeft;
+                 setProgress(calculatedElapsed);
+                 
+                 // If timeLeft is 0 or less, we are done
+                 if (data.timeLeft <= 0) {
+                     completeCheckUp();
+                 }
+             } else {
+                 // Fallback if no timeLeft
+                 setProgress(prev => {
+                     if (prev >= CHECKUP_DURATION_SEC) {
+                         completeCheckUp();
+                         return prev;
+                     }
+                     return prev + 1;
+                 });
+             }
+          }
+        } catch (e) {
+          console.error("Error fetching data", e);
+        }
+      }, 1000);
+  };
+
   const startCheckUp = async (autoStart = false) => {
     if (!autoStart && !patientId.trim()) {
       alert("Please enter a Patient ID first.");
       return;
     }
     
-    // If manual start, trigger ESP32
+    // If manual start, trigger ESP32 and wait
     if (!autoStart) {
         try {
             await fetch('/api/command', {
@@ -99,41 +129,18 @@ export default function App() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ command: 'START' })
             });
+            setStatus('CONNECTING'); // Wait for device
         } catch (e) {
             console.error("Failed to send start command", e);
+            alert("Failed to send command to device.");
         }
+        return; 
     }
     
-    setStatus('MEASURING');
-    setProgress(0);
-    setLastResult(null);
-    setShowHistory(false);
-    dataPointsRef.current = [];
-    setSignalQuality('Good');
-    
-    // Real Data Polling Loop
-    let elapsed = 0;
-    
-    timerRef.current = window.setInterval(async () => {
-      elapsed += 1;
-      setProgress(elapsed);
-
-      try {
-        const res = await fetch('/api/latest');
-        const data = await res.json();
-        
-        if (data && typeof data.bpm === 'number') {
-           setCurrentBpm(data.bpm);
-           dataPointsRef.current.push(data.bpm);
-        }
-      } catch (e) {
-        console.error("Error fetching data", e);
-      }
-
-      if (elapsed >= CHECKUP_DURATION_SEC) {
-        completeCheckUp();
-      }
-    }, 1000);
+    // If autoStart (triggered by polling loop), we just set state
+    // But actually, the polling loop handles the transition now.
+    // This function might be redundant for autoStart if we rely on the effect.
+    // Let's keep it for compatibility but logic is moved to startRealtimePolling
   };
 
   const stopSimulation = () => {
@@ -285,6 +292,13 @@ export default function App() {
                 >
                   <Play size={20} />
                   {status === 'COMPLETED' ? 'Start New Check' : 'Start Check-Up'}
+                </button>
+              ) : status === 'CONNECTING' ? (
+                <button 
+                  disabled
+                  className="w-full md:w-auto px-8 py-3 bg-amber-100 text-amber-600 font-semibold rounded-xl flex items-center justify-center gap-2 cursor-wait animate-pulse"
+                >
+                  Waiting for device...
                 </button>
               ) : (
                 <button 

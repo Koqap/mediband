@@ -6,6 +6,7 @@
 */
 
 #include <WiFi.h>
+#include <WiFiClientSecure.h>
 #include <HTTPClient.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -35,7 +36,7 @@ State currentState = IDLE;
 unsigned long measurementStartTime = 0;
 const unsigned long MEASUREMENT_DURATION = 15000; // 15 seconds
 unsigned long lastCommandCheck = 0;
-unsigned long lastCommandTimestamp = 0;
+String lastCommandPayload = "";
 
 void setup() {
   Serial.begin(115200);
@@ -90,6 +91,7 @@ void loop() {
   if (buttonState == LOW && lastButtonState == HIGH && currentState == IDLE) {
     delay(50); // Debounce
     if (digitalRead(BUTTON_PIN) == LOW) {
+      Serial.println("Button Triggered Start");
       currentState = MEASURING;
       measurementStartTime = currentMillis;
     }
@@ -157,76 +159,67 @@ void loop() {
     static unsigned long lastDataSend = 0;
     if (currentMillis - lastDataSend > 1000) {
        lastDataSend = currentMillis;
-       sendData(bpm);
+       sendData(bpm, remaining / 1000);
     }
   }
   
-  // No delay needed if we use non-blocking timers, but a small one saves power
   delay(10); 
 }
 
 void checkForCommand() {
   if(WiFi.status()== WL_CONNECTED){
+      WiFiClientSecure client;
+      client.setInsecure(); // Ignore SSL certificate errors
+      
       HTTPClient http;
-      http.begin(commandUrl);
+      http.begin(client, commandUrl);
+      
       int httpResponseCode = http.GET();
       
       if(httpResponseCode > 0){
         String payload = http.getString();
-        // Simple parsing for "command":"START" and timestamp
-        // In a real app, use ArduinoJson
-        if (payload.indexOf("\"command\":\"START\"") > 0) {
-           // Extract timestamp (simple hacky way or just check if it changed)
-           // For now, let's just trigger if we see it and it's "fresh" enough logic would be complex without JSON lib
-           // Let's assume if we see START we go, but we need to avoid looping.
-           // Ideally we parse timestamp.
-           // For this demo, let's just trigger.
-           // To avoid loop, we can check if payload changed?
-           // Or just rely on the fact that we clear it? No we don't clear it.
-           // Let's parse timestamp roughly.
-           int timeIdx = payload.indexOf("\"timestamp\":");
-           if (timeIdx > 0) {
-             String tsStr = payload.substring(timeIdx + 12);
-             unsigned long ts = strtoul(tsStr.c_str(), NULL, 10); // This might overflow 32bit long on ESP32? 
-             // JS timestamp is ms, so it's huge. ESP32 unsigned long is 32 bit.
-             // We need 64 bit. `unsigned long long`
-             // Let's just use string comparison or check if it's different from last.
-             if (tsStr != String(lastCommandTimestamp)) {
-                // New command!
-                // lastCommandTimestamp = ts; // Store string or value
-                // Actually, let's just trigger and assume the web side handles the "freshness" of the request
-                // But wait, if Redis holds "START" forever, ESP32 will loop forever.
-                // We need to know if it's NEW.
-                // Let's just store the full payload string and compare.
-                 static String lastPayload = "";
-                 if (payload != lastPayload) {
-                    lastPayload = payload;
-                    // Check if timestamp is recent? 
-                    // Let's just trigger.
-                    Serial.println("Received START command from Web");
-                    currentState = MEASURING;
-                    measurementStartTime = millis();
-                 }
-             }
+        
+        // Check if payload is different from last time to avoid loops
+        // And check if it contains "START"
+        if (payload != lastCommandPayload) {
+           lastCommandPayload = payload;
+           
+           // Debug print
+           Serial.print("New Command Payload: ");
+           Serial.println(payload);
+
+           if (payload.indexOf("START") >= 0) {
+              Serial.println("Received START command from Web");
+              currentState = MEASURING;
+              measurementStartTime = millis();
            }
         }
+      } else {
+        Serial.print("Error on HTTP request: ");
+        Serial.println(httpResponseCode);
       }
       http.end();
   }
 }
 
-void sendData(int bpm) {
+void sendData(int bpm, int timeLeft) {
   if(WiFi.status()== WL_CONNECTED){
+      WiFiClientSecure client;
+      client.setInsecure(); // Ignore SSL certificate errors
+
       HTTPClient http;
-      http.begin(serverUrl);
+      http.begin(client, serverUrl);
       http.addHeader("Content-Type", "application/json");
       
-      String jsonPayload = "{\"bpm\": " + String(bpm) + ", \"status\": \"MEASURING\"}";
+      String jsonPayload = "{\"bpm\": " + String(bpm) + ", \"status\": \"MEASURING\", \"timeLeft\": " + String(timeLeft) + "}";
       
       int httpResponseCode = http.POST(jsonPayload);
       
       if(httpResponseCode > 0){
-        Serial.print("HTTP Response code: ");
+        // Serial.print("HTTP Response code: ");
+        // Serial.println(httpResponseCode);
+      } else {
+        Serial.print("Error sending data: ");
         Serial.println(httpResponseCode);
       }
       http.end();

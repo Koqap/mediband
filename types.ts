@@ -30,6 +30,6 @@ export interface AIInsightData {
   summary: string;
 }
 
-export type AppStatus = 'IDLE' | 'MEASURING' | 'COMPLETED';
+export type AppStatus = 'IDLE' | 'MEASURING' | 'COMPLETED' | 'CONNECTING';
 
 export const CHECKUP_DURATION_SEC = 15; // Shortened for demo purposes (usually 30-60s)
