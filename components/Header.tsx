@@ -16,7 +16,7 @@ const Header: React.FC = () => {
           <Activity size={24} />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-slate-800 tracking-tight">MediPulse</h1>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">MediBand</h1>
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Heart Check-Up Dashboard</p>
         </div>
       </div>

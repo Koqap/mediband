@@ -309,13 +309,13 @@ export default function App() {
                 </button>
               )}
               
-              {status === 'IDLE' || status === 'COMPLETED' ? (
+              {status === 'IDLE' ? (
                 <button 
-                  onClick={startCheckUp}
+                  onClick={() => startCheckUp(false)}
                   className="w-full md:w-auto px-8 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
                 >
                   <Play size={20} />
-                  {status === 'COMPLETED' ? 'Start New Check' : 'Start Check-Up'}
+                  Start Check-Up
                 </button>
               ) : status === 'CONNECTING' ? (
                 <button 
@@ -415,12 +415,6 @@ export default function App() {
                   {/* Actions */}
                   {!loadingAI && (
                     <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-slate-100 no-print">
-                      <button 
-                        onClick={startCheckUp}
-                        className="flex-1 px-4 py-3 bg-white border border-slate-200 text-slate-700 font-semibold rounded-xl hover:bg-slate-50 flex justify-center items-center gap-2"
-                      >
-                        <RotateCcw size={18} /> Recheck
-                      </button>
                       <button 
                          onClick={saveResult}
                         className="flex-1 px-4 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 flex justify-center items-center gap-2 shadow-lg shadow-emerald-100"
