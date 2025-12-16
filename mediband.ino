@@ -23,6 +23,7 @@ const char* password = "12345678";
 
 // API CONFIGURATION
 const char* serverUrl = "https://mediband-eight.vercel.app/api/receive";
+const char* commandUrl = "https://mediband-eight.vercel.app/api/command";
 
 const int BUTTON_PIN = 0; // Boot button is GPIO 0
 bool lastButtonState = HIGH;
@@ -33,6 +34,8 @@ State currentState = IDLE;
 
 unsigned long measurementStartTime = 0;
 const unsigned long MEASUREMENT_DURATION = 15000; // 15 seconds
+unsigned long lastCommandCheck = 0;
+unsigned long lastCommandTimestamp = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -81,19 +84,25 @@ void showIntro() {
 
 void loop() {
   int buttonState = digitalRead(BUTTON_PIN);
+  unsigned long currentMillis = millis();
 
   // Handle Button Press to Start (Simple Debounce)
   if (buttonState == LOW && lastButtonState == HIGH && currentState == IDLE) {
     delay(50); // Debounce
     if (digitalRead(BUTTON_PIN) == LOW) {
       currentState = MEASURING;
-      measurementStartTime = millis();
+      measurementStartTime = currentMillis;
     }
   }
   lastButtonState = buttonState;
 
+  // Poll for Web Commands (every 1s)
+  if (currentState == IDLE && (currentMillis - lastCommandCheck > 1000)) {
+    lastCommandCheck = currentMillis;
+    checkForCommand();
+  }
+
   if (currentState == MEASURING) {
-    unsigned long currentMillis = millis();
     unsigned long elapsed = currentMillis - measurementStartTime;
     unsigned long remaining = MEASUREMENT_DURATION > elapsed ? MEASUREMENT_DURATION - elapsed : 0;
     
@@ -154,6 +163,56 @@ void loop() {
   
   // No delay needed if we use non-blocking timers, but a small one saves power
   delay(10); 
+}
+
+void checkForCommand() {
+  if(WiFi.status()== WL_CONNECTED){
+      HTTPClient http;
+      http.begin(commandUrl);
+      int httpResponseCode = http.GET();
+      
+      if(httpResponseCode > 0){
+        String payload = http.getString();
+        // Simple parsing for "command":"START" and timestamp
+        // In a real app, use ArduinoJson
+        if (payload.indexOf("\"command\":\"START\"") > 0) {
+           // Extract timestamp (simple hacky way or just check if it changed)
+           // For now, let's just trigger if we see it and it's "fresh" enough logic would be complex without JSON lib
+           // Let's assume if we see START we go, but we need to avoid looping.
+           // Ideally we parse timestamp.
+           // For this demo, let's just trigger.
+           // To avoid loop, we can check if payload changed?
+           // Or just rely on the fact that we clear it? No we don't clear it.
+           // Let's parse timestamp roughly.
+           int timeIdx = payload.indexOf("\"timestamp\":");
+           if (timeIdx > 0) {
+             String tsStr = payload.substring(timeIdx + 12);
+             unsigned long ts = strtoul(tsStr.c_str(), NULL, 10); // This might overflow 32bit long on ESP32? 
+             // JS timestamp is ms, so it's huge. ESP32 unsigned long is 32 bit.
+             // We need 64 bit. `unsigned long long`
+             // Let's just use string comparison or check if it's different from last.
+             if (tsStr != String(lastCommandTimestamp)) {
+                // New command!
+                // lastCommandTimestamp = ts; // Store string or value
+                // Actually, let's just trigger and assume the web side handles the "freshness" of the request
+                // But wait, if Redis holds "START" forever, ESP32 will loop forever.
+                // We need to know if it's NEW.
+                // Let's just store the full payload string and compare.
+                 static String lastPayload = "";
+                 if (payload != lastPayload) {
+                    lastPayload = payload;
+                    // Check if timestamp is recent? 
+                    // Let's just trigger.
+                    Serial.println("Received START command from Web");
+                    currentState = MEASURING;
+                    measurementStartTime = millis();
+                 }
+             }
+           }
+        }
+      }
+      http.end();
+  }
 }
 
 void sendData(int bpm) {

@@ -27,9 +27,10 @@ export default function App() {
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
   const [signalQuality, setSignalQuality] = useState<'Good' | 'Fair' | 'Poor'>('Good');
 
-  // Refs for simulation
+  // Refs for simulation and state tracking
   const timerRef = useRef<number | null>(null);
   const dataPointsRef = useRef<number[]>([]);
+  const lastCompletionTimeRef = useRef<number>(0);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -60,8 +61,14 @@ export default function App() {
              // Check for stale data (older than 10 seconds)
              const now = Date.now();
              if (data.timestamp && (now - data.timestamp > 10000)) {
-               console.log("Ignoring stale auto-start signal", now - data.timestamp);
+               // console.log("Ignoring stale auto-start signal", now - data.timestamp);
                return;
+             }
+             
+             // Check if this is a re-trigger of the same session we just finished
+             if (data.timestamp && data.timestamp < lastCompletionTimeRef.current) {
+                // console.log("Ignoring signal from completed session");
+                return;
              }
 
              // Only start if we aren't already (double check handled by status check above)
@@ -78,10 +85,23 @@ export default function App() {
     return () => clearInterval(pollInterval);
   }, [status, patientId]);
 
-  const startCheckUp = (autoStart = false) => {
+  const startCheckUp = async (autoStart = false) => {
     if (!autoStart && !patientId.trim()) {
       alert("Please enter a Patient ID first.");
       return;
+    }
+    
+    // If manual start, trigger ESP32
+    if (!autoStart) {
+        try {
+            await fetch('/api/command', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ command: 'START' })
+            });
+        } catch (e) {
+            console.error("Failed to send start command", e);
+        }
     }
     
     setStatus('MEASURING');
@@ -127,6 +147,7 @@ export default function App() {
     stopSimulation();
     setStatus('COMPLETED');
     setSignalQuality('Good'); // Reset signal on complete
+    lastCompletionTimeRef.current = Date.now(); // Mark completion time
 
     // Calculate Stats
     const data = dataPointsRef.current;
