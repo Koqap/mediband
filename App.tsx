@@ -72,6 +72,11 @@ export default function App() {
 
              // If we were waiting (CONNECTING) or IDLE, start measuring
              if (status !== 'MEASURING') {
+                 // Ignore if the data says "MEASURING" but time is up (stale finish packet)
+                 if (data.timeLeft !== undefined && data.timeLeft <= 0) {
+                     return;
+                 }
+
                  if (!patientId) setPatientId("Guest Patient");
                  // Transition to MEASURING
                  setStatus('MEASURING');

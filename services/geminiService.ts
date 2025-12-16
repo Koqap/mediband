@@ -6,7 +6,7 @@ export const generateScreeningInsight = async (
   risk: RiskLevel,
   symptoms: string[]
 ): Promise<AIInsightData> => {
-  const modelId = "google/gemini-2.0-flash-exp:free"; // Or any other OpenRouter model
+  const modelId = "nvidia/nemotron-3-nano-30b-a3b:free"; // Or any other OpenRouter model
 
   const systemInstruction = `
     You are a medical screening assistant for a hospital dashboard. 

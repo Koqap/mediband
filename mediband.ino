@@ -110,6 +110,7 @@ void loop() {
     
     if (elapsed >= MEASUREMENT_DURATION) {
       currentState = COMPLETED;
+      sendData(0, 0, "COMPLETED"); // Notify server that we are done
       showIntro(); 
       currentState = IDLE;
       return;
@@ -159,7 +160,7 @@ void loop() {
     static unsigned long lastDataSend = 0;
     if (currentMillis - lastDataSend > 1000) {
        lastDataSend = currentMillis;
-       sendData(bpm, remaining / 1000);
+       sendData(bpm, remaining / 1000, "MEASURING");
     }
   }
   
@@ -202,7 +203,7 @@ void checkForCommand() {
   }
 }
 
-void sendData(int bpm, int timeLeft) {
+void sendData(int bpm, int timeLeft, String statusLabel) {
   if(WiFi.status()== WL_CONNECTED){
       WiFiClientSecure client;
       client.setInsecure(); // Ignore SSL certificate errors
@@ -211,7 +212,7 @@ void sendData(int bpm, int timeLeft) {
       http.begin(client, serverUrl);
       http.addHeader("Content-Type", "application/json");
       
-      String jsonPayload = "{\"bpm\": " + String(bpm) + ", \"status\": \"MEASURING\", \"timeLeft\": " + String(timeLeft) + "}";
+      String jsonPayload = "{\"bpm\": " + String(bpm) + ", \"status\": \"" + statusLabel + "\", \"timeLeft\": " + String(timeLeft) + "}";
       
       int httpResponseCode = http.POST(jsonPayload);
       
