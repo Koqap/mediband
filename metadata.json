@@ -1,0 +1,5 @@
+{
+  "name": "MediPulse Heart Dashboard",
+  "description": "A simplified hospital dashboard for quick heart check-ups and screening assistance.",
+  "requestFramePermissions": []
+}
